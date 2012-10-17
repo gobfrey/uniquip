@@ -1,0 +1,48 @@
+{
+	"institutions": {
+		"southampton": {
+			"name": "University of Southampton"
+		},
+		"oxford": {
+			"name": "University of Oxford"
+		},
+		"cambridge": {
+			"name": "University of Cambridge"
+		},
+		"ucl": {
+			"name": "University College London"
+		},
+		"imperial": {
+			"name": "Imperial College London"
+		}
+	},
+	"users": {
+		"southampton": {
+			"can_write": ["southampton"],
+			"can_read": ["combined","southampton"]
+		},
+		"oxford": {
+			"can_write": ["oxford"],
+			"can_read": ["combined","oxford"]
+		},
+		"cambridge": {
+			"can_write": ["cambridge"],
+			"can_read": ["combined","cambridge"]
+		},
+		"ucl": {
+			"can_write": ["ucl"],
+			"can_read": ["combined","ucl"]
+		},
+		"imperial": {
+			"can_write": ["imperial"],
+			"can_read": ["combined","imperial"]
+		}
+	},
+	"system": {
+		"base_path": "/var/www/equipment/",
+		"upload_base": "var/uploads/"
+		
+
+	}
+}
+
