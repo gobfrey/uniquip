@@ -49,11 +49,28 @@ function upload_posted_file($institution,$username)
 {
 	global $config;
 
-	$upload_dir = $config['institutions'][$institution]['upload_dir']
+	$upload_dir = $config['institutions'][$institution]['upload_dir'];
+	$tmp_file = tempnam($upload_dir,'NEW');
+
+	$tmp_name = $_FILES["file"]["tmp_name"];
+	move_uploaded_file($tmp_name, $tmp_file);
+
+	if (file_is_valid($tmp_name))
+	{
+		
+	}
+}
+
+
+
+function file_is_valid($file_path)
+{
+	global $config;
 
 
 
 }
+
 
 #a user is attempting to read or write to a file.  Can they?
 #File names are either institution names or 'combined' for the combined file

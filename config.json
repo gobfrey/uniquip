@@ -42,12 +42,83 @@
 			"can_read": ["all"]
 		}
 	},
+	"csv_columns": [
+		"Description" : {
+			"validate_data": "yes",
+			"validate_heading": "yes",
+			"required": "yes",
+			"type": "text",
+		},
+		"Location": {
+			"validate_data": "yes",
+			"validate_heading": "yes",
+			"required": "yes",
+			"type": "wikipedia_url",
+		},
+		"Contact Telephone": {
+			"validate_data": "yes",
+			"validate_heading": "yes",
+			"required": "one_of",
+			"requirement_group": "contact",
+			"type": "telephone_number",
+		},
+		"Contact URL": {
+			"validate_data": "yes",
+			"validate_heading": "yes",
+			"required": "one_of",
+			"requirement_group": "contact",
+			"type": "url",
+		},
+		"Contact Email": {
+			"validate_data": "yes",
+			"validate_heading": "yes",
+			"required": "one_of",
+			"requirement_group": "contact",
+			"type": "email",
+		},
+		"Name": {
+			"validate_heading": "yes",
+			"type": "text",
+		},
+		"ID": {
+			"validate_heading": "yes",
+			"type": "text",
+		},
+		"Photo": {
+			"validate_heading": "yes",
+			"type": "url",
+		},
+		"Research Group": {
+			"validate_heading": "yes",
+			"type": "text",
+		},
+		"Cost": {
+			"validate_heading": "yes",
+			"type": "text",
+		},
+		"Availability": {
+			"validate_heading": "yes",
+			"type": "text",
+		},
+		"Support Available": {
+			"validate_heading": "yes",
+			"type": "text",
+		},
+		"URL": {
+			"validate_heading": "yes",
+			"type": "url",
+		},
+		"Open Data": {
+			"validate_heading": "yes",
+			"type": "yes/no",
+		},
+	],
 	"system": {
 		"base_path": "/var/www/uniquip/",
-		"upload_base": "var/uploads/"
-		"log_base": "log/"
-		"logfile_name": "event_log"
-
+		"upload_base": "var/uploads/",
+		"log_base": "log/",
+		"logfile_name": "event_log",
+		"max_filesize": "20"
 	}
 }
 
