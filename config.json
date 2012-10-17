@@ -36,12 +36,17 @@
 		"imperial": {
 			"can_write": ["imperial"],
 			"can_read": ["combined","imperial"]
+		},
+		"admin": {
+			"can_write": ["all"],
+			"can_read": ["all"]
 		}
 	},
 	"system": {
-		"base_path": "/var/www/equipment/",
+		"base_path": "/var/www/uniquip/",
 		"upload_base": "var/uploads/"
-		
+		"log_base": "log/"
+		"logfile_name": "event_log"
 
 	}
 }

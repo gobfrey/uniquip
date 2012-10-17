@@ -1,6 +1,6 @@
 <?php
 
-$config = loadconfig('/var/www/equipment/config.json');
+$config = loadconfig('/var/www/uniquip/config.json');
 
 switch ($_SERVER['REQUEST_METHOD'])
 {
@@ -9,9 +9,6 @@ switch ($_SERVER['REQUEST_METHOD'])
 		break;
 	case 'GET':
 		process_get();
-		break;
-	case 'PUT':
-		process_put();
 		break;
 }
 
@@ -22,12 +19,57 @@ function process_post()
 {
 	$institution = $_POST['institution'];
 	
-
-
 	if (!valid_institution($institution))
 	{
+		#return a status code and exit
 	}
+
+	$username = $_SERVER['REMOTE_USER'];
+
+	if (!valid_user($username))
+	{
+		#return a status code and exit
+	}
+
+	if (!allow($username, $institution, 'write'))
+	{
+		#return a status code and exit
+	}
+
+	if (!$_FILES['file'])
+	{
+		#return a status code and exit
+	}
+
+	#upload file
+	upload_posted_file($institution,$username);
 }
+
+function upload_posted_file($institution,$username)
+{
+	global $config;
+
+	$upload_dir = $config['institutions'][$institution]['upload_dir']
+
+
+
+}
+
+#a user is attempting to read or write to a file.  Can they?
+#File names are either institution names or 'combined' for the combined file
+function allow($username, $file, $action)
+{
+	global $config;
+
+	$permissions = $config["users"][$username]["allow_$action"];
+
+	if (in_array($institution, $permissions) || in_array($institution, 'all'))
+	{
+		return true;
+	}
+	return false;
+}
+
 
 function process_get()
 {
@@ -44,11 +86,39 @@ function process_get()
 	}
 }
 
-function process_put()
+
+function log_event($event_type, $msg)
 {
-	
+	global $config;
+
+	$log_dir = $config["system"]["base_path"];
+	$log_dir .= $config["system"]["log_base"];
+	create_dir_if_needed($log_dir);
+	$log_file = $log_dir . $config["system"]["logfile_name"];
+
+	$fp = fopen($log_file, 'w');
+
+	if (!$fp)
+	{
+		die "Couldn't open $log_file for writing\n";
+	}
 
 
+	$log_parts = array();
+
+	array_push($log_parts, $event_type);
+	array_push($log_parts, date("Y-m-d H:i:s"));
+	array_push($log_parts, $_SERVER['REMOTE_HOST');
+	array_push($log_parts, $msg);
+
+	$log_line = implode("\t",$log_parts) . "\n";
+
+	if (!fwrite($fp, $log_line))
+	{
+		die "Couldn't write to $log_file\n";
+	}
+
+	fclose($fp);
 }
 
 
@@ -97,8 +167,18 @@ function institution_select_options()
 
 function valid_institution($institution)
 {
-	return in_array($institution, $config["institutions"]);
+	global $config;
+
+	return array_key_exists($institution, $config["institutions"]);
 }
+
+function valid_username($institution)
+{
+	global $config;
+
+	return array_key_exists($institution, $config["users"]);
+}
+
 
 
 function loadconfig($filename)
@@ -108,14 +188,18 @@ function loadconfig($filename)
 
 	if ($data == NULL)
 	{
-		die("Couldn't open $filename\n");
+		$msg = "Couldn't open $filename";
+		log_event('ERROR',$msg);
+		die("$msg\n");
 	}
 
 	$decoded = json_decode($data,1);
 
 	if ($decoded == NULL)
 	{
-		die("Couldn't parse $filename\n");
+		$msg = "Couldn't open $filename";
+		log_event('ERROR',$msg);
+		die("$msg\n");
 	}
 
 	$upload_base = $decoded["system"]["base_path"];
@@ -127,18 +211,22 @@ function loadconfig($filename)
 	{
 		$upload_dir = $upload_base . $id . '/';
 		$info["upload_dir"] = $upload_dir;
-		if (!is_dir($upload_dir))
-		{
-			if (!mkdir($upload_dir,0770,1))
-			{
-				die("couldn't create $upload_dir\n");
-			}
-		}
+		create_dir_if_needed($upload_dir);
 	}
 
 	return $decoded;
 }
 
+function create_dir_if_needed($path)
+{
+	if (is_dir($path)) { return; }
 
+	if (!mkdir($path,0770,1))
+	{
+		$msg = "couldn't create $path\n";
+		log_event('ERROR',$msg);
+		die("$msg\n");
+	}
+}
 
 ?>
