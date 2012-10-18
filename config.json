@@ -43,82 +43,98 @@
 		}
 	},
 	"csv_columns": [
-		"Description" : {
+		{
+			"label": "Description",
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "yes",
-			"type": "text",
+			"type": "text"
 		},
-		"Location": {
+		{
+			"label": "Location",
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "yes",
-			"type": "wikipedia_url",
+			"type": "wikipedia_url"
 		},
-		"Contact Telephone": {
+		{
+			"label": "Contact Telephone",
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
-			"type": "telephone_number",
+			"type": "telephone_number"
 		},
-		"Contact URL": {
+		{
+			"label": "Contact URL",
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
-			"type": "url",
+			"type": "url"
 		},
-		"Contact Email": {
+		{
+			"label": "Contact Email",
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
-			"type": "email",
+			"type": "email"
 		},
-		"Name": {
+		{
+			"label": "Name",
 			"validate_heading": "yes",
-			"type": "text",
+			"type": "text"
 		},
-		"ID": {
+		{
+			"label": "ID",
 			"validate_heading": "yes",
-			"type": "text",
+			"type": "text"
 		},
-		"Photo": {
+		{
+			"label": "Photo",
 			"validate_heading": "yes",
-			"type": "url",
+			"type": "url"
 		},
-		"Research Group": {
+		{
+			"label": "Research Group",
 			"validate_heading": "yes",
-			"type": "text",
+			"type": "text"
 		},
-		"Cost": {
+		{
+			"label": "Cost",
 			"validate_heading": "yes",
-			"type": "text",
+			"type": "text"
 		},
-		"Availability": {
+		{
+			"label": "Availability",
 			"validate_heading": "yes",
-			"type": "text",
+			"type": "text"
 		},
-		"Support Available": {
+		{
+			"label": "Support Available",
 			"validate_heading": "yes",
-			"type": "text",
+			"type": "text"
 		},
-		"URL": {
+		{
+			"label": "URL",
 			"validate_heading": "yes",
-			"type": "url",
+			"type": "url"
 		},
-		"Open Data": {
+		{
+			"label": "Open Data",
 			"validate_heading": "yes",
-			"type": "yes/no",
-		},
+			"type": "yes/no"
+		}
 	],
+
 	"system": {
 		"base_path": "/var/www/uniquip/",
 		"upload_base": "var/uploads/",
 		"log_base": "log/",
 		"logfile_name": "event_log",
-		"max_filesize": "20"
+		"max_filesize": "20",
+		"combined_base": "var/combined/"
 	}
 }
 
