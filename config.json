@@ -42,96 +42,83 @@
 			"can_read": ["all"]
 		}
 	},
-	"csv_columns": [
-		{
-			"label": "Description",
+	"csv_columns": 
+	{
+		"Description": {
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "yes",
 			"type": "text"
 		},
-		{
-			"label": "Location",
+		"Location": {
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "yes",
 			"type": "wikipedia_url"
 		},
-		{
-			"label": "Contact Telephone",
+		"Contact Telephone": {
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
 			"type": "telephone_number"
 		},
-		{
-			"label": "Contact URL",
+		"Contact URL": {
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
 			"type": "url"
 		},
-		{
-			"label": "Contact Email",
+		"Contact Email": {
 			"validate_data": "yes",
 			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
 			"type": "email"
 		},
-		{
-			"label": "Name",
+		"Name": {
 			"validate_heading": "yes",
 			"type": "text"
 		},
-		{
-			"label": "ID",
+		"ID": {
 			"validate_heading": "yes",
 			"type": "text"
 		},
-		{
-			"label": "Photo",
+		"Photo": {
 			"validate_heading": "yes",
 			"type": "url"
 		},
-		{
-			"label": "Research Group",
+		"Research Group": {
 			"validate_heading": "yes",
 			"type": "text"
 		},
-		{
-			"label": "Cost",
+		"Cost": {
 			"validate_heading": "yes",
 			"type": "text"
 		},
-		{
-			"label": "Availability",
+		"Availability": {
 			"validate_heading": "yes",
 			"type": "text"
 		},
-		{
-			"label": "Support Available",
+		"Support Available": {
 			"validate_heading": "yes",
 			"type": "text"
 		},
-		{
-			"label": "URL",
+		"URL": {
 			"validate_heading": "yes",
 			"type": "url"
 		},
-		{
-			"label": "Open Data",
+		"Open Data": {
 			"validate_heading": "yes",
 			"type": "yes/no"
 		}
-	],
+	},
 
 	"system": {
 		"base_path": "/var/www/uniquip/",
 		"upload_base": "var/uploads/",
-		"log_base": "log/",
+		"log_base": "var/log/",
 		"logfile_name": "event_log",
 		"max_filesize": "20",
 		"combined_base": "var/combined/"

@@ -23,7 +23,7 @@ function process_post()
 
 	if (!$institution)
 	{
-		exit_with_status(400,"You must specify and institution");
+		exit_with_status(400,"You must specify an institution");
 	}
 
 	if (!valid_institution($institution))
@@ -91,18 +91,45 @@ function swap_in_new_file($institution, $temp_file)
 }
 
 
+function associate_data($keys, $values)
+{
+	$arr = array();
+
+	for ($i = 0; $i < count($keys); ++$i) {
+		if ($values[$i])
+		{
+			$arr[$keys[$i]] = $values[$i];
+		}
+		else
+		{
+			$arr[$keys[$i]] = NULL;
+		}
+	}
+
+	return $arr;
+}
+
+
 function file_is_valid($file_path)
 {
 	global $config;
 
 	$row_number = 1;
 	$problems = array();
+	$headings_cmp = array();
+
 	if (($handle = fopen($file_path, "r")) !== FALSE) {
 		while (($row = fgetcsv($handle)) !== FALSE) {
 			$row_problems = array();
 			if ($row_number == 1)
 			{
-				$problems = problems_in_headings($row);
+				foreach ($row as $heading)
+				{
+					array_push($headings_cmp, heading_compareval($heading));
+				}
+
+				$problems = problems_in_headings($row, $headings_cmp);
+
 				if ($problems)
 				{
 					break; #don't bother checking the data if the headings are bad
@@ -110,7 +137,9 @@ function file_is_valid($file_path)
 			}
 			else
 			{
-				$row_problems = problems_in_data_row($row, $row_number);
+				#make associative array of the data
+
+				$row_problems = problems_in_data_row(associate_data($headings_cmp, $row), $row_number);
 			}
 			if ($row_problems)
 			{
@@ -139,16 +168,58 @@ function file_is_valid($file_path)
 	return true;
 }
 
-function problems_in_headings($row)
+function problems_in_headings($headings, $headings_cmp)
 {
 	global $config;
 
 	$problems = array();
 
-	if (count($row) != count($config["csv_columns"]))
+	if (count($row) != count($headings_cmp))
 	{
-		array_push($problems, "Incorrect number of headings in CSV");
+		$problems[] = "Unexpected problems with CSV headings";
 	}
+
+	if (!$problems)
+	{
+		foreach ($config["csv_columns_cmp"] as $heading_cmp => $col_conf)
+		{
+			if (strcasecmp($col_conf['required'], 'yes') == 0)
+			{
+				if (!in_array($heading_cmp, $headings_cmp))
+				{
+					$problems[] = "Required column missing ( " . $col_conf['label'] . " )";
+				}
+			}
+		}
+
+		foreach ($config["requirement_groups"] as $id => $grp_headings_cmp)
+		{
+			$count = 0;
+			foreach ($grp_headings_cmp as $heading_cmp)
+			{
+				if (in_array($heading_cmp, $headings_cmp))
+				{
+					$count++;
+				}
+			}
+			if ($count < 1)
+			{
+				$msg = 'At least one of columns [';
+
+				$labels = array();
+				foreach ($grp_headings_cmp as $heading_cmp)
+				{
+					$labels[] = $config["csv_columns_cmp"][$heading_cmp]['label'];
+				}
+				$msg .= implode(',',$labels);
+				$msg .= '] must be present';
+
+				$problems[] = $msg;
+			}
+		}
+
+	}
+
 
 	if (!$problems)
 	{
@@ -162,6 +233,10 @@ function problems_in_headings($row)
 			}
 		}
 	}
+
+
+
+
 	return $problems;
 }
 
@@ -171,98 +246,111 @@ function problems_in_data_row($row, $rowindex)
 
 	$problems = array();
 
-	if (count($row) != count($config["csv_columns"]))
+	foreach ($row as $heading_cmp => $val)
 	{
-		array_push($problems, "Incorrect number of elements in row $rowindex");
-	}
+		$col_conf = $config["csv_columns_cmp"][$heading_cmp];
 
-	if (!$problems)
-	{
-		$requirement_groups;
-
-		for ($i = 0; $i < count($row); ++$i) {
-			$col = $config["csv_columns"][$i];
-			$val = $row[$i];
-
-			if (
-				$col["required"] == 'yes' &&
-				!$val
-			){
-				array_push($problems, "Row $rowindex, Column " . ($i+1) . ": Required Field Missing");
-			}
-
-			if (
-				( $col["required"] == 'one_of' )
-				
-			)
-			{
-				$requirement_groups[$col["requirement_group"]][$i+1] = $row[$i];
-			}
-
-			if ($val && $col["validate_data"])
-			{
-				$invalid = 0;
-				switch ($col["type"]){
-	#no check needed for text -- we'll accept anything
-					case 'url':
-						if (filter_var($val, FILTER_VALIDATE_URL) === false) {
-							$invalid = 1;
-						}
-						break;
-					case 'email':
-						if (filter_var($val, FILTER_VALIDATE_EMAIL) === false) {
-							$invalid = 1;
-						}
-						break;
-					case 'yes/no':
-						if (strcasecmp($val, 'yes') || strcasecmp($val, 'no'))
-						{
-							$invalid = 1;
-						}
-						break;
-					case 'wikipedia_url':
-						if (filter_var($val, FILTER_VALIDATE_URL) === false) {
-							$invalid = 1;
-						}
-						#just a quick and dirty check
-						if (!strstr($val, 'wikipedia')) {
-							$invalid = 1;
-						}
-						break;
-					case 'telephone_number':
-						#a pretty permissive regexp, allowing anything at the start, but at least 6 telephone-number-like characters at the end.
-						$opts = array( "options" => array( "regexp" => '/^.*\s*\+?[0-9 ()-]{6,}*$/' ));
-						if (filter_var($n, FILTER_VALIDATE_REGEXP, $opts ) === false) {
-							$invalid = 1;
-						}
-						break;
-				}
-				if ($invalid)
-				{
-					array_push($problems, "Row $rowindex, Column " . ($i+1) . ": Is not of type " . $col["type"]);
-				}
-			}
+		if (
+			($col_conf["required"] == 'yes') &&
+			!$val
+		){
+			array_push($problems, "Row $rowindex, Column " . ($i+1) . ": Required Field Missing");
 		}
 
-		#at least one of the values needs to be set
-		foreach ($requirement_groups as $groupid => $values)
+		if ($val && $col["validate_data"])
 		{
-			$column_ids = array();
-			$filled_flag = 0;
-			foreach ($values as $column_id => $value)
-			{
-				if ($value) { $filled_flag = 1; };
-				array_push($column_ids, $column_id);
+			$invalid = 0;
+			switch ($col_conf["type"]){
+#no check needed for text -- we'll accept anything
+				case 'url':
+					if (filter_var($val, FILTER_VALIDATE_URL) === false) {
+						$invalid = 1;
+					}
+					break;
+				case 'email':
+					if (filter_var($val, FILTER_VALIDATE_EMAIL) === false) {
+						$invalid = 1;
+					}
+					break;
+				case 'yes/no':
+					if (
+						(strcasecmp($val, 'yes') == 0) || 
+						(strcasecmp($val, 'no') == 0)
+					)
+					{
+						$invalid = 1;
+					}
+					break;
+				case 'wikipedia_url':
+					if (filter_var($val, FILTER_VALIDATE_URL) === false) {
+						$invalid = 1;
+					}
+					#just a quick and dirty check
+					if (!strstr($val, 'wikipedia')) {
+						$invalid = 1;
+					}
+					break;
+				case 'telephone_number':
+					#a pretty permissive regexp, allowing anything at the start, but at least 6 telephone-number-like characters at the end.
+					$opts = array( "options" => array( "regexp" => '/^.*\s*\+?[0-9 ()-]{6,}*$/' ));
+					if (filter_var($n, FILTER_VALIDATE_REGEXP, $opts ) === false) {
+						$invalid = 1;
+					}
+					break;
 			}
-			if (!$filled_flag)
+			if ($invalid)
 			{
-				array_push($problems, "Row $rowindex, Columns " . implode(',',$column_ids) . ": At least one must be filled");
+				array_push($problems, "Row $rowindex: " . $config["csv_columns_cmp"][$heading_cmp]['label'] . " is not of type " . $col["type"]);
 			}
+		}
+	}
+
+	#at least one of the values needs to be set
+	foreach ($config["requirement_groups"] as $id => $grp_headings_cmp)
+	{
+		$count = 0;
+		foreach ($grp_headings_cmp as $heading_cmp)
+		{
+			if ($row[$heading_cmp])
+			{
+				$count++;
+			}
+		}
+		if ($count < 1)
+		{
+			$msg = "Row $rowindex: At least one of [";
+
+			$labels = array();
+			foreach ($grp_headings_cmp as $heading_cmp)
+			{
+				$labels[] = $config["csv_columns_cmp"][$heading_cmp]['label'];
+			}
+			$msg .= implode(',',$labels);
+			$msg .= '] must be present';
+
+			$problems[] = $msg;
+		}
+	}
+
+
+	foreach ($config["requirement_groups"] as $groupid => $grp_headings_cmp)
+	{
+		$filled_flag = 0;
+		foreach ($group_headings_cmp as $column_id => $value)
+		{
+			if ($value) { $filled_flag = 1; };
+			array_push($column_ids, $column_id);
+		}
+		if (!$filled_flag)
+		{
+			array_push($problems, "Row $rowindex, Columns " . implode(',',$column_ids) . ": At least one must be filled");
 		}
 	}
 	
 	return $problems;
 }
+
+
 
 #a user is attempting to read or write to a file.  Can they?
 #File names are either institution names or 'combined' for the combined file
@@ -365,11 +453,10 @@ function send_template()
 
 	$row = array();
 
-	foreach ($config["csv_columns"] as $info)
+	foreach ($config["csv_columns"] as $label => $info )
 	{
-		array_push($row, $info['label']);
+		array_push($row, $label);
 	}
-
 	$rows = array( $row );
 
 	send_csv($rows, 'template.csv');
@@ -386,10 +473,11 @@ function send_csv($rows, $filename)
 
 	foreach ($rows as $row)
 	{
-		fputcsv($row, $labels);
+		fputcsv($output, $row);
 	}
 
 	log_event('EVENT',"$filename sent");
+	exit;
 }
 
 function send_file($file, $filename, $mimetype = "text/csv")
@@ -409,7 +497,7 @@ function log_event($event_type, $msg)
 	create_dir_if_needed($log_dir);
 	$log_file = $log_dir . $config["system"]["logfile_name"];
 
-	$fp = fopen($log_file, 'w');
+	$fp = fopen($log_file, 'a');
 
 	if (!$fp)
 	{
@@ -423,6 +511,9 @@ function log_event($event_type, $msg)
 	array_push($log_parts, date("Y-m-d H:i:s"));
 	array_push($log_parts, $_SERVER['REMOTE_HOST']);
 	array_push($log_parts, $msg);
+
+##need username too
+
 
 	$log_line = implode("\t",$log_parts) . "\n";
 
@@ -525,8 +616,44 @@ function loadconfig($filename)
 		create_dir_if_needed($upload_dir);
 	}
 
+
+	#create associative array of CSV columns based on compare values
+	#create lists of requirement groups
+	$decoded["csv_columns_cmp"] = array();
+	$decoded["requirement_groups"] = array();
+	foreach ($decoded["csv_columns"] as $heading => $info)
+	{
+		$compareval = heading_compareval($heading);
+		if ($compareval == $heading)
+		{
+			#heading is compareval -- no need to do anything
+			next;
+		}
+
+		if (array_key_exists($compareval,$decoded["csv_columns_cmp"]))
+		{
+			exit_with_status(500,"Column Heading Collision in configuration");
+		}
+		$decoded["csv_columns_cmp"][$compareval] = $info;
+		$decoded["csv_columns_cmp"][$compareval]["label"] = $heading;
+
+		if (array_key_exists('requirement_group',$info))
+		{
+			$decoded["requirement_groups"][$info['requirement_group']][] = $compareval;
+
+		}
+	}
+
 	return $decoded;
 }
+
+function heading_compareval($str)
+{
+	$str = preg_replace('/\s+/', '', $str);
+	$str = strtolower($str);
+	return $str;
+}
+
 
 function create_dir_if_needed($path)
 {
