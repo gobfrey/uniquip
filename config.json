@@ -1,19 +1,29 @@
 {
 	"institutions": {
 		"southampton": {
-			"name": "University of Southampton"
+			"name": "University of Southampton",
+			"url": "http://www.southampton.ac.uk",
+			"logo_url": "http://www.southampton.ac.uk/images/bg_logo_small.png"
 		},
 		"oxford": {
-			"name": "University of Oxford"
+			"name": "University of Oxford",
+			"url": "http://www.ox.ac.uk",
+			"logo_url": "http://www.ox.ac.uk/display_images/logo.gif"
 		},
 		"cambridge": {
-			"name": "University of Cambridge"
+			"name": "University of Cambridge",
+			"url": "http://www.cam.ac.uk",
+			"logo_url": "http://webservices.admin.cam.ac.uk/global/images/identifier4.gif"
 		},
 		"ucl": {
-			"name": "University College London"
+			"name": "University College London",
+			"url": "http://www.ucl.ac.uk/",
+			"logo_url": "http://www.ucl.ac.uk/homepage_dev/lib/images/design/logo-ucl.png"
 		},
 		"imperial": {
-			"name": "Imperial College London"
+			"name": "Imperial College London",
+			"url": "http://www3.imperial.ac.uk/",
+			"logo_url": "http://www3.imperial.ac.uk/2007templates/images/logo_imperial_college_london.png"
 		}
 	},
 	"users": {
@@ -42,7 +52,7 @@
 			"can_read": ["all"]
 		}
 	},
-	"csv_columns": 
+	"csv_input_columns": 
 	{
 		"Description": {
 			"validate_data": "yes",
@@ -114,7 +124,71 @@
 			"type": "yes/no"
 		}
 	},
-
+	"csv_output_columns": {
+		"Description": {
+			"type": "input_field"
+		},
+		"Location (Wikipdia)": {
+			"type": "input_field"
+			"input_field": "Location",
+		},
+		"Contact Telephone": {
+			"type": "input_field"
+		},
+		"Contact URL": {
+			"type": "input_field"
+		},
+		"Contact Email": {
+			"type": "input_field"
+		},
+		"Name": {
+			"type": "input_field"
+		},
+		"ID": {
+			"type": "input_field"
+		},
+		"Photo": {
+			"type": "input_field"
+		},
+		"Research Group": {
+			"type": "input_field"
+		},
+		"Cost": {
+			"type": "input_field"
+		},
+		"Availability": {
+			"type": "input_field"
+		},
+		"Support Available": {
+			"type": "input_field"
+		},
+		"URL": {
+			"type": "input_field"
+		},
+		"Open Data": {
+			"type": "input_field"
+		}
+		"Institution": {
+			"type": "config",
+			"configpath": ["institutions", "$ID", "name"],
+		},
+		"Institution URL": {
+			"type": "config",
+			"configpath": ["institutions", "$ID", "url"]
+		},
+		"Institution Logo URL": {
+			"type": "config",
+			"configpath": ["institutions", "$ID", "logo_url"]
+		},
+		"Datestamp": {
+			"type": "upload_datestamp"
+		},
+		"Approximate Coordinates": {
+			"type": "input_field_transform",
+			"input_field": "Location",
+			"transform_type": "wikipedia_to_long_lat",
+		}
+	},
 	"system": {
 		"base_path": "/var/www/uniquip/",
 		"upload_base": "var/uploads/",

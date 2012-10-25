@@ -19,6 +19,8 @@ exit;
 #'institution' parameter.
 function process_post()
 {
+	global $config;
+
 	$institution = $_POST['institution'];
 
 	if (!$institution)
@@ -49,6 +51,8 @@ function process_post()
 
 	echo "Upload Successful";
 
+	configpath_to_value($config["csv_output_columns"]["Institution"]['configpath'], 'southampton');
+
 	generate_combined_file();
 
 }
@@ -56,10 +60,206 @@ function process_post()
 
 function generate_combined_file()
 {
-	$all_data = load_all_active_csv();
+	global $config;
+
+
+	$csv_rows = array();
+
+	$source_cols = array();
+
+	#load all sources into memory.
+	foreach ($config["institutions"] as $inst => $c)
+	{
+		if $institution_is_active($inst)
+		{
+			$source_cols[$inst] = csv_to_associative_array(institution_active_file($inst));
+		}
+	}
+
+	#calculate the number of rows and sanity check the data
+	$row_total = 0;
+	foreach ($source_cols as $inst => $cols)
+	{
+		$row_count = null;
+		foreach ($cols as $heading_cmp => $vals)
+		{
+			if ($row_count != null) {
+				$row_count = count($vals);
+			}
+			else
+			{
+				if (count($vals != $row_count))
+				{
+					exit_with_status(500,'Problems aggregating CSV -- row count mismatch');
+				}
+			}
+		}
+		$row_total += $row_count;
+	}
+
 
 
 }
+
+
+function generate_institution_rows($inst, $input_columns, &$rows)
+{
+	global $config;
+
+	$row_count = 0;
+
+	#count depth of columns (also sanity check that they're the same depth
+	foreach ($input_columns as $heading_cmp => $vals)
+	{
+		if ($row_count != null) {
+			$row_count = count($vals);
+		}
+		else
+		{
+			if (count($vals != $row_count))
+			{
+				exit_with_status(500,'Problems aggregating CSV -- row count mismatch');
+			}
+		}
+	}
+
+	for ($i = 0; $i < $row_count; ++$i) {
+		$row = array();		
+
+		foreach ($config["output_csv_columns"] as $heading => $cconf)
+		{
+			$row[] = generate_output_value($inst, $heading, $cconf, $input_columns, $i);
+		{
+		$rows[] = $row;
+	}
+}
+
+
+
+function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
+{
+	global $config;
+
+	switch ($cconf['type']){
+		case 'config':
+			return configpath_to_value($cconf['configpath'], $inst);
+		case 'upload_datestamp':
+			if (!$config['output_cache'][$inst]['upload_datestamp'])
+			{
+				$config['output_cache'][$inst]['upload_datestamp'] = institution_datestamp($inst);
+			}
+			return $config['output_cache'][$inst]['upload_datestamp'];
+		case 'input_field':
+			if ($cconf['input_field'])
+			{
+				return $vals[$cconf['input_field']][$i];
+			}
+			else
+			{
+				return $vals[$heading][$i];
+			}
+	}
+	return 'FIELD OUTPUT NOT HANDLED';
+}
+
+
+
+#we assume the file is valid and small enough to load into memory
+#each key is the heading_cmp, and contains a list of values;
+function csv_to_associative_array($file)
+{
+	$first = true;
+	$headings_cmp = array();
+	$columns = ();
+	if (($handle = fopen($file_path, "r")) !== FALSE) {
+		while (($row = fgetcsv($handle)) !== FALSE) {
+			if ($first)
+			{
+				foreach ($row as $heading)
+				{
+					$heading_cmp = heading_to_cmp($heading);
+					$headings_cmp[] = $heading_cmp;
+					$columns[$heading_cmp] = array();
+				}
+				$first = false;
+			}
+			else
+			{
+				#iterate over the headings so as to insert null values if the data row is short
+				for ($i = 0; $i < count($headings_cmp); ++$i) {
+					if ($row[$i] != null)
+					{
+						$columns[$headings_cmp[$i]][] = $row[$i];
+					}
+					else
+					{
+						$columns[$headings_cmp[$i]][] = null;
+					}
+				}
+			}			
+		}
+	}
+	else
+	{
+		exit_with_status(500,"Couldn't open $file for reading");
+	}
+
+	return $columns;
+}
+
+function aggregate_file()
+{
+	global $config;
+	return $config["system"]["base_path"] . $config["system"]["combined_base"] . 'active';
+}
+
+
+function institution_active_file($institution)
+{
+	global $config;
+
+	$upload_dir = $config['institutions'][$institution]['upload_dir'];
+
+	$target_file = $upload_dir . 'active';
+
+	return $target_file;
+}
+
+function institution_is_active($institution)
+{
+	if (file_exists(institution_active_file($institution)))
+	{
+		return true;
+	}
+	return false;
+}
+
+function institution_datestamp($institution)
+{
+	$target_file = institution_active_file($institution);
+
+	if (file_exists($target_file))
+	{
+		return date("Y-m-d",filemtime($target_file));
+	}
+	return NULL;
+}
+
+function configpath_to_value($configpath, $institution)
+{
+	global $config;
+
+	$c = $config;
+
+	foreach ( $configpath as $a )
+	{
+		if ($a == '$ID') { $a = $institution; }
+		$c = $c[$a];
+	}
+
+	return $c;
+}
+
 
 
 function upload_posted_file($institution,$username)
@@ -86,11 +286,7 @@ function upload_posted_file($institution,$username)
 #future work -- detect if the files are identical, and don't swap if they are
 function swap_in_new_file($institution, $temp_file)
 {
-	global $config;
-
-	$upload_dir = $config['institutions'][$institution]['upload_dir'];
-
-	$target_file = $upload_dir . 'active';
+	$target_file = institution_active_file($institution);
 
 	if (file_exists($target_file))
 	{
@@ -136,7 +332,7 @@ function file_is_valid($file_path)
 			{
 				foreach ($row as $heading)
 				{
-					array_push($headings_cmp, heading_compareval($heading));
+					$headings_cmp[] =  heading_to_cmp($heading);
 				}
 
 				$problems = problems_in_headings($row, $headings_cmp);
@@ -200,7 +396,7 @@ function problems_in_headings($headings, $headings_cmp)
 
 	if (!$problems)
 	{
-		foreach ($config["csv_columns_cmp"] as $heading_cmp => $col_conf)
+		foreach ($config["csv_input_columns_cmp"] as $heading_cmp => $col_conf)
 		{
 			if (strcasecmp($col_conf['required'], 'yes') == 0)
 			{
@@ -228,7 +424,7 @@ function problems_in_headings($headings, $headings_cmp)
 				$labels = array();
 				foreach ($grp_headings_cmp as $heading_cmp)
 				{
-					$labels[] = $config["csv_columns_cmp"][$heading_cmp]['label'];
+					$labels[] = $config["csv_input_columns_cmp"][$heading_cmp]['label'];
 				}
 				$msg .= implode(',',$labels);
 				$msg .= '] must be present';
@@ -242,13 +438,6 @@ function problems_in_headings($headings, $headings_cmp)
 	return $problems;
 }
 
-function cmp_to_heading($cmpval)
-{
-	global $config;
-	return $config["csv_columns_cmp"][$cmpval]['label'];
-
-}
-
 function problems_in_data_row($row, $rowindex) 
 {
 	global $config;
@@ -257,7 +446,7 @@ function problems_in_data_row($row, $rowindex)
 
 	foreach ($row as $heading_cmp => $val)
 	{
-		$col_conf = $config["csv_columns_cmp"][$heading_cmp];
+		$col_conf = $config["csv_input_columns_cmp"][$heading_cmp];
 
 		if (
 			($col_conf["required"] == 'yes') &&
@@ -332,7 +521,7 @@ function problems_in_data_row($row, $rowindex)
 			$labels = array();
 			foreach ($grp_headings_cmp as $heading_cmp)
 			{
-				$labels[] = $config["csv_columns_cmp"][$heading_cmp]['label'];
+				$labels[] = $config["csv_input_columns_cmp"][$heading_cmp]['label'];
 			}
 			$msg .= implode(',',$labels);
 			$msg .= '] must be present';
@@ -385,8 +574,7 @@ function process_get()
 		{
 			if (allow('combined','read'))
 			{
-				$file_path = $config["system"]["base_path"] . $config["system"]["combined_base"] . 'active';
-				send_file($file_path, 'combined.csv');
+				send_file(aggregate_file(), 'combined.csv');
 			}
 			else
 			{
@@ -448,7 +636,7 @@ function send_template()
 
 	$row = array();
 
-	foreach ($config["csv_columns"] as $label => $info )
+	foreach ($config["csv_input_columns"] as $label => $info )
 	{
 		array_push($row, $label);
 	}
@@ -614,23 +802,23 @@ function loadconfig($filename)
 
 	#create associative array of CSV columns based on compare values
 	#create lists of requirement groups
-	$decoded["csv_columns_cmp"] = array();
+	$decoded["csv_input_columns_cmp"] = array();
 	$decoded["requirement_groups"] = array();
-	foreach ($decoded["csv_columns"] as $heading => $info)
+	foreach ($decoded["csv_input_columns"] as $heading => $info)
 	{
-		$compareval = heading_compareval($heading);
+		$compareval = heading_to_cmp($heading);
 		if ($compareval == $heading)
 		{
 			#heading is compareval -- no need to do anything
 			next;
 		}
 
-		if (array_key_exists($compareval,$decoded["csv_columns_cmp"]))
+		if (array_key_exists($compareval,$decoded["csv_input_columns_cmp"]))
 		{
 			exit_with_status(500,"Column Heading Collision in configuration");
 		}
-		$decoded["csv_columns_cmp"][$compareval] = $info;
-		$decoded["csv_columns_cmp"][$compareval]["label"] = $heading;
+		$decoded["csv_input_columns_cmp"][$compareval] = $info;
+		$decoded["csv_input_columns_cmp"][$compareval]["label"] = $heading;
 
 		if (array_key_exists('requirement_group',$info))
 		{
@@ -642,11 +830,18 @@ function loadconfig($filename)
 	return $decoded;
 }
 
-function heading_compareval($str)
+function heading_to_cmp($str)
 {
 	$str = preg_replace('/\s+/', '', $str);
 	$str = strtolower($str);
 	return $str;
+}
+
+function cmp_to_heading($cmpval)
+{
+	global $config;
+	return $config["csv_input_columns_cmp"][$cmpval]['label'];
+
 }
 
 
