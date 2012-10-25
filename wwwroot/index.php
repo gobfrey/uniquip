@@ -49,7 +49,18 @@ function process_post()
 
 	echo "Upload Successful";
 
+	generate_combined_file();
+
 }
+
+
+function generate_combined_file()
+{
+	$all_data = load_all_active_csv();
+
+
+}
+
 
 function upload_posted_file($institution,$username)
 {
@@ -130,6 +141,13 @@ function file_is_valid($file_path)
 
 				$problems = problems_in_headings($row, $headings_cmp);
 
+				#Check for duplicate headings
+				$uniq_headings_cmp = array_unique($headings_cmp);
+				if (count(array_unique($headings_cmp)) != count($headings_cmp))
+				{
+					$problems[] = 'Duplicate heading in CSV';
+				}
+
 				if ($problems)
 				{
 					break; #don't bother checking the data if the headings are bad
@@ -156,12 +174,13 @@ function file_is_valid($file_path)
 
 		if ($problems)
 		{
+			unlink($file_path);
 			exit_with_status(400,"Errors in CSV File:\n\t" . implode("\n\t",$problems));
-		
 		}
 	}
 	else
 	{
+		unlink($file_path);
 		exit_with_status(500, "Problem opening $file_path\n for reading");
 	}
 
@@ -174,7 +193,7 @@ function problems_in_headings($headings, $headings_cmp)
 
 	$problems = array();
 
-	if (count($row) != count($headings_cmp))
+	if (count($headings) != count($headings_cmp))
 	{
 		$problems[] = "Unexpected problems with CSV headings";
 	}
@@ -220,24 +239,14 @@ function problems_in_headings($headings, $headings_cmp)
 
 	}
 
-
-	if (!$problems)
-	{
-		for ($i = 0; $i < count($row); ++$i) {
-			if (
-				( $config["csv_columns"][$i]["validate_heading"] == 'yes' ) &&
-				( $row[$i] != $config["csv_columns"][$i]["label"] )
-			)
-			{
-				array_push($problems, "Heading " . $row[$i] . ' does not match ' . $config["csv_columns"][$i]["label"]);
-			}
-		}
-	}
-
-
-
-
 	return $problems;
+}
+
+function cmp_to_heading($cmpval)
+{
+	global $config;
+	return $config["csv_columns_cmp"][$cmpval]['label'];
+
 }
 
 function problems_in_data_row($row, $rowindex) 
@@ -254,10 +263,10 @@ function problems_in_data_row($row, $rowindex)
 			($col_conf["required"] == 'yes') &&
 			!$val
 		){
-			array_push($problems, "Row $rowindex, Column " . ($i+1) . ": Required Field Missing");
+			array_push($problems, "Row $rowindex: Required Value Missing (" . cmp_to_heading($heading_cmp) . ")");
 		}
 
-		if ($val && $col["validate_data"])
+		if ($val && $col_conf["validate_data"])
 		{
 			$invalid = 0;
 			switch ($col_conf["type"]){
@@ -291,16 +300,16 @@ function problems_in_data_row($row, $rowindex)
 					}
 					break;
 				case 'telephone_number':
-					#a pretty permissive regexp, allowing anything at the start, but at least 6 telephone-number-like characters at the end.
-					$opts = array( "options" => array( "regexp" => '/^.*\s*\+?[0-9 ()-]{6,}*$/' ));
-					if (filter_var($n, FILTER_VALIDATE_REGEXP, $opts ) === false) {
+					#a pretty permissive regexp, expecting a sequence of at least 8 telephone-number-esque characters 
+					$opts = array( "options" => array( "regexp" => '/[0-9\s()-]{8,}$/' ));
+					if (filter_var($val, FILTER_VALIDATE_REGEXP, $opts ) === false) {
 						$invalid = 1;
 					}
 					break;
 			}
 			if ($invalid)
 			{
-				array_push($problems, "Row $rowindex: " . $config["csv_columns_cmp"][$heading_cmp]['label'] . " is not of type " . $col["type"]);
+				array_push($problems, "Row $rowindex: " . cmp_to_heading($heading_cmp) . " is not of type " . $col_conf["type"]);
 			}
 		}
 	}
@@ -311,7 +320,7 @@ function problems_in_data_row($row, $rowindex)
 		$count = 0;
 		foreach ($grp_headings_cmp as $heading_cmp)
 		{
-			if ($row[$heading_cmp])
+			if ($row[$heading_cmp] != NULL)
 			{
 				$count++;
 			}
@@ -332,20 +341,6 @@ function problems_in_data_row($row, $rowindex)
 		}
 	}
 
-
-	foreach ($config["requirement_groups"] as $groupid => $grp_headings_cmp)
-	{
-		$filled_flag = 0;
-		foreach ($group_headings_cmp as $column_id => $value)
-		{
-			if ($value) { $filled_flag = 1; };
-			array_push($column_ids, $column_id);
-		}
-		if (!$filled_flag)
-		{
-			array_push($problems, "Row $rowindex, Columns " . implode(',',$column_ids) . ": At least one must be filled");
-		}
-	}
 	
 	return $problems;
 }
