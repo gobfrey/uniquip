@@ -1,5 +1,11 @@
 <?php
 
+
+
+
+
+
+
 $config = loadconfig('/var/www/uniquip/config.json');
 
 switch ($_SERVER['REQUEST_METHOD'])
@@ -13,6 +19,13 @@ switch ($_SERVER['REQUEST_METHOD'])
 }
 
 exit;
+
+
+#############################
+
+
+
+
 
 
 #a file is being posted.  Institution is specified with the
@@ -48,13 +61,9 @@ function process_post()
 
 	#if we got here, then the upload was successful.  Any problems, and exit_with_status would have been called.
 
-
-	echo "Upload Successful";
-
-	configpath_to_value($config["csv_output_columns"]["Institution"]['configpath'], 'southampton');
-
 	generate_combined_file();
 
+	exit_with_status(200,"Your submission was successful");
 }
 
 
@@ -70,35 +79,36 @@ function generate_combined_file()
 	#load all sources into memory.
 	foreach ($config["institutions"] as $inst => $c)
 	{
-		if $institution_is_active($inst)
+		if (institution_is_active($inst))
 		{
 			$source_cols[$inst] = csv_to_associative_array(institution_active_file($inst));
 		}
 	}
 
-	#calculate the number of rows and sanity check the data
-	$row_total = 0;
+	$csv_rows[] = generate_output_headings();
+
+
 	foreach ($source_cols as $inst => $cols)
 	{
-		$row_count = null;
-		foreach ($cols as $heading_cmp => $vals)
-		{
-			if ($row_count != null) {
-				$row_count = count($vals);
-			}
-			else
-			{
-				if (count($vals != $row_count))
-				{
-					exit_with_status(500,'Problems aggregating CSV -- row count mismatch');
-				}
-			}
-		}
-		$row_total += $row_count;
+		generate_institution_rows($inst, $cols, $csv_rows);
 	}
 
+	$filepath = aggregate_file();
 
+	write_csv($csv_rows, $filepath);
+}
 
+function generate_output_headings()
+{
+	global $config;
+
+	$row = array();
+
+	foreach ($config['csv_output_columns'] as $heading => $cconf)
+	{
+		$row[] = $heading;
+	}
+	return $row;
 }
 
 
@@ -111,29 +121,29 @@ function generate_institution_rows($inst, $input_columns, &$rows)
 	#count depth of columns (also sanity check that they're the same depth
 	foreach ($input_columns as $heading_cmp => $vals)
 	{
-		if ($row_count != null) {
+		if ($row_count == 0) {
 			$row_count = count($vals);
 		}
 		else
 		{
-			if (count($vals != $row_count))
+			if (count($vals) != $row_count)
 			{
-				exit_with_status(500,'Problems aggregating CSV -- row count mismatch');
+				exit_with_status(500,"Problems aggregating CSV -- row count mismatch( " . $count($vals) . " vs $row_count)");
 			}
 		}
 	}
 
-	for ($i = 0; $i < $row_count; ++$i) {
+	for ($i = 0; $i < $row_count; ++$i)
+	{
 		$row = array();		
-
-		foreach ($config["output_csv_columns"] as $heading => $cconf)
+		foreach ($config["csv_output_columns"] as $heading => $cconf)
 		{
 			$row[] = generate_output_value($inst, $heading, $cconf, $input_columns, $i);
-		{
+		}
 		$rows[] = $row;
 	}
-}
 
+}
 
 
 function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
@@ -150,13 +160,52 @@ function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
 			}
 			return $config['output_cache'][$inst]['upload_datestamp'];
 		case 'input_field':
+			$h;
 			if ($cconf['input_field'])
 			{
-				return $vals[$cconf['input_field']][$i];
+				$h = heading_to_cmp($cconf['input_field']);
 			}
 			else
 			{
-				return $vals[$heading][$i];
+				$h = heading_to_cmp($heading);
+			}
+			if ($input_columns[$h] && $input_columns[$h][$i])
+			{
+				return $input_columns[$h][$i];
+			}
+			else
+			{
+				return null;
+			}
+		case 'input_field_transform':
+			if ($cconf['transform_type'] == 'wikipedia_to_long_lat')
+			{
+				$val = $input_columns[heading_to_cmp($cconf['input_field'])][$i];
+				if (valid_value($val,'wikipedia_url'))
+				{
+					$cache = read_cache_file('wikipedia_to_lat_long');
+					if (array_key_exists($val,$cache))
+					{
+						return $cache[$val];
+					}
+					else
+					{
+						$coords = wikipedia_to_lat_long($val);
+						if ($coords === null)
+						{
+echo 'foo';
+							return null;
+						}
+						$cache[$val] = $coords;
+						write_cache_file('wikipedia_to_lat_long',$cache);
+						return $coords;
+					}
+
+				}
+				else
+				{
+					return null;
+				}
 			}
 	}
 	return 'FIELD OUTPUT NOT HANDLED';
@@ -164,14 +213,48 @@ function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
 
 
 
+function wikipedia_to_lat_long($url)
+{
+	$dbpedia_url = preg_replace('/^.*wiki\//','http://dbpedia.org/data/', $url);
+	$dbpedia_url .= '.ntriples';
+
+	$triples = file_get_contents($dbpedia_url);
+
+	$results = array();
+
+	$long_match = '/<http:\/\/www.w3.org\/2003\/01\/geo\/wgs84_pos#long>\s*"([0-9\.-]*)"/';
+	$lat_match = '/<http:\/\/www.w3.org\/2003\/01\/geo\/wgs84_pos#lat>\s*"([0-9\.-]*)"/';
+
+	$lat = null;
+	$long = null;
+
+	if (preg_match($long_match, $triples, $results))
+	{
+		$long = $results[1];
+	}
+
+	if (preg_match($lat_match, $triples, $results))
+	{
+		$lat = $results[1];
+	}
+
+	if ( ($lat === null) || ($long === null) )
+	{
+		return null;
+	}
+	return "$lat,$long";
+
+}
+
+
 #we assume the file is valid and small enough to load into memory
 #each key is the heading_cmp, and contains a list of values;
-function csv_to_associative_array($file)
+function csv_to_associative_array($filepath)
 {
 	$first = true;
 	$headings_cmp = array();
-	$columns = ();
-	if (($handle = fopen($file_path, "r")) !== FALSE) {
+	$columns = array();
+	if (($handle = fopen($filepath, "r")) !== FALSE) {
 		while (($row = fgetcsv($handle)) !== FALSE) {
 			if ($first)
 			{
@@ -201,7 +284,7 @@ function csv_to_associative_array($file)
 	}
 	else
 	{
-		exit_with_status(500,"Couldn't open $file for reading");
+		exit_with_status(500,"Couldn't open $filepath for reading");
 	}
 
 	return $columns;
@@ -210,7 +293,12 @@ function csv_to_associative_array($file)
 function aggregate_file()
 {
 	global $config;
-	return $config["system"]["base_path"] . $config["system"]["combined_base"] . 'active';
+
+	$path = $config["system"]["base_path"] . $config["system"]["combined_base"];
+
+	create_dir_if_needed($path);
+
+	return $path . 'active';
 }
 
 
@@ -260,8 +348,6 @@ function configpath_to_value($configpath, $institution)
 	return $c;
 }
 
-
-
 function upload_posted_file($institution,$username)
 {
 	global $config;
@@ -269,7 +355,10 @@ function upload_posted_file($institution,$username)
 	$upload_dir = $config['institutions'][$institution]['upload_dir'];
 	$temp_file = tempnam($upload_dir,'NEW');
 
-	move_uploaded_file($_FILES["file"]["tmp_name"], $temp_file);
+	if (!move_uploaded_file($_FILES["file"]["tmp_name"], $temp_file))
+	{
+		exit_with_status(500,"Couldn't move uploaded file to $temp_file");
+	}
 
 	if (file_is_valid($temp_file))
 	{
@@ -286,15 +375,23 @@ function upload_posted_file($institution,$username)
 #future work -- detect if the files are identical, and don't swap if they are
 function swap_in_new_file($institution, $temp_file)
 {
+	global $config;
+
 	$target_file = institution_active_file($institution);
+	$upload_dir = $config['institutions'][$institution]['upload_dir'];
 
 	if (file_exists($target_file))
 	{
 		$archive_filename = $upload_dir . 'archived-on-' . date("Y-m-d-H-i-s");
-		rename($target_file, $archive_filename);
+		if (!rename($target_file, $archive_filename)) {
+			exit_with_status(500,"couldn't rename $target_file to $archive_filename");
+		}
 	}
 
-	rename($temp_file, $target_file);
+	if (!rename($temp_file, $target_file)) {
+		unlink($temp_file);
+		exit_with_status(500,"couldn't rename $temp_file to $target_file");
+	}
 }
 
 
@@ -455,51 +552,13 @@ function problems_in_data_row($row, $rowindex)
 			array_push($problems, "Row $rowindex: Required Value Missing (" . cmp_to_heading($heading_cmp) . ")");
 		}
 
-		if ($val && $col_conf["validate_data"])
+		if (
+			($val !== null) &&
+			$col_conf["validate_data"] && 
+			(!valid_value($val, $col_conf['type']))
+		)
 		{
-			$invalid = 0;
-			switch ($col_conf["type"]){
-#no check needed for text -- we'll accept anything
-				case 'url':
-					if (filter_var($val, FILTER_VALIDATE_URL) === false) {
-						$invalid = 1;
-					}
-					break;
-				case 'email':
-					if (filter_var($val, FILTER_VALIDATE_EMAIL) === false) {
-						$invalid = 1;
-					}
-					break;
-				case 'yes/no':
-					if (
-						(strcasecmp($val, 'yes') == 0) || 
-						(strcasecmp($val, 'no') == 0)
-					)
-					{
-						$invalid = 1;
-					}
-					break;
-				case 'wikipedia_url':
-					if (filter_var($val, FILTER_VALIDATE_URL) === false) {
-						$invalid = 1;
-					}
-					#just a quick and dirty check
-					if (!strstr($val, 'wikipedia')) {
-						$invalid = 1;
-					}
-					break;
-				case 'telephone_number':
-					#a pretty permissive regexp, expecting a sequence of at least 8 telephone-number-esque characters 
-					$opts = array( "options" => array( "regexp" => '/[0-9\s()-]{8,}$/' ));
-					if (filter_var($val, FILTER_VALIDATE_REGEXP, $opts ) === false) {
-						$invalid = 1;
-					}
-					break;
-			}
-			if ($invalid)
-			{
-				array_push($problems, "Row $rowindex: " . cmp_to_heading($heading_cmp) . " is not of type " . $col_conf["type"]);
-			}
+			array_push($problems, "Row $rowindex: " . cmp_to_heading($heading_cmp) . " is not of type " . $col_conf["type"]);
 		}
 	}
 
@@ -534,7 +593,49 @@ function problems_in_data_row($row, $rowindex)
 	return $problems;
 }
 
-
+function valid_value($val, $type)
+{
+	switch ($type){
+		case 'text': return true;
+		case 'url':
+			if (filter_var($val, FILTER_VALIDATE_URL) === false) {
+				return false;
+			}
+			return true;
+		case 'email':
+			if (filter_var($val, FILTER_VALIDATE_EMAIL) === false) {
+				return false;
+			}
+			return true;
+		case 'yes/no':
+			if (
+				(strcasecmp($val, 'yes') == 0) || 
+				(strcasecmp($val, 'no') == 0)
+			)
+			{
+				return false;
+			}
+			return true;
+		case 'wikipedia_url':
+			if (filter_var($val, FILTER_VALIDATE_URL) === false) {
+				return false;
+			}
+			#just a quick and dirty check
+			if (!strstr($val, 'wikipedia')) {
+				return false;
+			}
+			return true;
+		case 'telephone_number':
+			#a pretty permissive regexp, expecting a sequence of at least 8 telephone-number-esque characters 
+			$opts = array( "options" => array( "regexp" => '/[0-9\s()-]{8,}$/' ));
+			if (filter_var($val, FILTER_VALIDATE_REGEXP, $opts ) === false) {
+				return false;
+			}
+			return true;
+	}
+	#unrecognised type -- return false
+	return false;
+}
 
 #a user is attempting to read or write to a file.  Can they?
 #File names are either institution names or 'combined' for the combined file
@@ -590,10 +691,17 @@ function process_get()
 		{
 			#must be an 'institution.csv' file
 			$parts = explode('.',$filename);
-			if (valid_institution($parts[0] and $parts[1] == 'csv'))
+			if (valid_institution($parts[0]) and $parts[1] == 'csv')
 			{
-
-				send_institution_file($parts[0]);
+				$file = institution_active_file($parts[0]);
+				if (file_exists($file))
+				{
+					send_file($file,$filename);
+				}
+				else
+				{
+					exit_with_status(404,"File not found -- perhaps data hasn't been uploaded");
+				}	
 			}
 			else
 			{
@@ -654,21 +762,47 @@ function send_csv($rows, $filename)
 	// create a file pointer connected to the output stream
 	$output = fopen('php://output', 'w');
 
-	foreach ($rows as $row)
-	{
-		fputcsv($output, $row);
-	}
+	write_csv_rows($rows, $output);
+
+	fclose($output);
 
 	log_event('EVENT',"$filename sent");
 	exit;
 }
 
+function write_csv($rows, $filepath)
+{
+	if (($handle = fopen($filepath, "w")) !== FALSE) {
+		write_csv_rows($rows, $handle);
+		fclose($handle);
+		log_event('EVENT',"$filename written");
+	}
+	else
+	{
+		exit_with_status(500,"Couldn't open $file_path for writing");
+	}
+}
+
+function write_csv_rows($rows, $fh)
+{
+	foreach ($rows as $row)
+	{
+		fputcsv($fh, $row);
+	}
+}
+
+
 function send_file($file, $filename, $mimetype = "text/csv")
 {
-	http_send_content_disposition($filename, true);
-	http_send_content_type($mimetype);
-	http_throttle(0.1, 2048);
-	http_send_file($file);
+	if (!file_exists($file))
+	{
+		exit_with_status(404,"Couldn't send $file -- not found");
+	}
+	header("Content-type: $mimetype");
+	header('Content-Disposition: attachment; filename="'.$filename.'"');
+	header("Content-Length: ". filesize($file));
+	readfile($file);
+
 }
 
 function log_event($event_type, $msg)
@@ -853,8 +987,48 @@ function create_dir_if_needed($path)
 	{
 		#don't log this event, just die.  Logging will cause recursion.
 		$msg = "couldn't create $path\n";
-		die("$msg\n");
+		exit_with_status(500,$msg);
 	}
+}
+
+function cache_file($id)
+{
+	global $config;
+
+	$path = $config['system']['base_path'] . $config['system']['cache_base'];
+
+	create_dir_if_needed($path);
+
+	$path .= $id;
+
+	return $path;
+}
+
+function write_cache_file($id,$val)
+{
+	$file = cache_file($id);
+	if (file_put_contents($file, serialize($val)) === false)
+	{
+		exit_with_status(500, "Couldn't open $path for put_file_contents");
+	}
+}
+
+function read_cache_file($id)
+{
+	$file = cache_file($id);
+	if (!file_exists($file))
+	{
+		#write an empty array to be read and returned
+		write_cache_file($id, array());
+	}
+
+	$c = file_get_contents($file);
+	if ($c === false)
+	{
+		exit_with_status(500, "Couldn't open $path for get_file_contents");
+	}
+
+	return unserialize($c);
 }
 
 ?>

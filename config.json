@@ -129,8 +129,8 @@
 			"type": "input_field"
 		},
 		"Location (Wikipdia)": {
-			"type": "input_field"
-			"input_field": "Location",
+			"type": "input_field",
+			"input_field": "Location"
 		},
 		"Contact Telephone": {
 			"type": "input_field"
@@ -167,10 +167,10 @@
 		},
 		"Open Data": {
 			"type": "input_field"
-		}
+		},
 		"Institution": {
 			"type": "config",
-			"configpath": ["institutions", "$ID", "name"],
+			"configpath": ["institutions", "$ID", "name"]
 		},
 		"Institution URL": {
 			"type": "config",
@@ -186,7 +186,7 @@
 		"Approximate Coordinates": {
 			"type": "input_field_transform",
 			"input_field": "Location",
-			"transform_type": "wikipedia_to_long_lat",
+			"transform_type": "wikipedia_to_long_lat"
 		}
 	},
 	"system": {
@@ -194,6 +194,7 @@
 		"upload_base": "var/uploads/",
 		"log_base": "var/log/",
 		"logfile_name": "event_log",
+		"cache_base": "var/cache/",
 		"max_filesize": "20",
 		"combined_base": "var/combined/"
 	}
