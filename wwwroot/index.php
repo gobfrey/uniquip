@@ -22,8 +22,9 @@
 
 
 #load the configuration.  Verify that this path is correct.
-$config = loadconfig('/var/www/uniquip/config.json');
+$config = loadconfig('/var/www/facilitiesdatadev/htdocs/uniquip/config.json');
 
+date_default_timezone_set('Europe/London');
 
 switch ($_SERVER['REQUEST_METHOD'])
 {
@@ -112,7 +113,14 @@ function process_get()
 		{
 			if (allow('combined','read'))
 			{
-				send_file(aggregate_file(), 'combined.csv');
+				if (file_exists(aggregate_file()))
+				{
+					send_file(aggregate_file(), 'combined.csv');
+				}
+				else
+				{
+					exit_with_status(404,"Combined File not found");
+				}
 			}
 			else
 			{
@@ -646,8 +654,15 @@ function send_front_page()
 </form>
 <h2>Download a File</h2>
 <ul>
-<li><a href="/index.php?file=combined.csv">Combined Data</a></li>
-<li><a href="/index.php?file=status.csv">Status Overview</a></li>
+<li><a href="/index.php?file=template.csv">Blank Template</a></li>
+';
+
+if (file_exists(aggregate_file()))
+{
+	$page .= '<li><a href="/index.php?file=combined.csv">Combined Data</a></li>';
+}
+
+$page .= '<li><a href="/index.php?file=status.csv">Status Overview</a></li>
 <li>Institution Source Files<ul>
 ';
 
@@ -691,11 +706,6 @@ function send_template()
 
 	send_csv($rows, 'template.csv');
 }
-
-
-
-
-
 
 
 
@@ -983,7 +993,7 @@ function send_csv($rows, $filename)
 {
 	// output headers so that the file is downloaded rather than displayed
 	header('Content-Type: text/csv; charset=utf-8');
-	header('Content-Disposition: attachment; filename=template.csv');
+	header("Content-Disposition: attachment; filename=$filename");
 
 	// create a file pointer connected to the output stream
 	$output = fopen('php://output', 'w');
