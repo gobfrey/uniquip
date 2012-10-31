@@ -303,18 +303,24 @@ function problems_in_data_row($row, $rowindex)
 
 	foreach ($row as $heading_cmp => $val)
 	{
+		if (!array_key_exists($heading_cmp, $config["csv_input_columns_cmp"]))
+		{
+			continue;
+		}
+
 		$col_conf = $config["csv_input_columns_cmp"][$heading_cmp];
 
 		if (
-			($col_conf["required"] == 'yes') &&
-			!$val
-		){
+			array_value_equals($col_conf,"required",'yes') &&
+			!isset($val)
+		)
+		{
 			array_push($problems, "Row $rowindex: Required Value Missing (" . cmp_to_heading($heading_cmp) . ")");
 		}
 
 		if (
 			($val !== null) &&
-			$col_conf["validate_data"] && 
+			array_key_exists('validate_data', $col_conf) && 
 			(!valid_value($val, $col_conf['type']))
 		)
 		{
@@ -328,7 +334,7 @@ function problems_in_data_row($row, $rowindex)
 		$count = 0;
 		foreach ($grp_headings_cmp as $heading_cmp)
 		{
-			if ($row[$heading_cmp] != NULL)
+			if (isset($row[$heading_cmp]))
 			{
 				$count++;
 			}
@@ -375,7 +381,10 @@ function problems_in_headings($headings, $headings_cmp)
 		#required fields
 		foreach ($config["csv_input_columns_cmp"] as $heading_cmp => $col_conf)
 		{
-			if (strcasecmp($col_conf['required'], 'yes') == 0)
+			if (
+				array_key_exists('required', $col_conf) &&
+				( strcasecmp($col_conf['required'], 'yes') == 0 )
+			)
 			{
 				if (!in_array($heading_cmp, $headings_cmp))
 				{
@@ -532,18 +541,27 @@ function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
 {
 	global $config;
 
+	#initialise the cache
+	if (
+		!array_key_exists('output_cache', $config) ||
+		!array_key_exists($inst, $config['output_cache'])
+	)
+	{
+		$config["output_cache"][$inst] = array();
+	}
+
 	switch ($cconf['type']){
 		case 'config':
 			return configpath_to_value($cconf['configpath'], $inst);
 		case 'upload_datestamp':
-			if (!$config['output_cache'][$inst]['upload_datestamp'])
+			if (!array_key_exists('upload_datestamp',$config['output_cache'][$inst]))
 			{
 				$config['output_cache'][$inst]['upload_datestamp'] = institution_datestamp($inst);
 			}
 			return $config['output_cache'][$inst]['upload_datestamp'];
 		case 'input_field':
 			$h;
-			if ($cconf['input_field'])
+			if (array_key_exists('input_field',$cconf))
 			{
 				$h = heading_to_cmp($cconf['input_field']);
 			}
@@ -551,7 +569,7 @@ function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
 			{
 				$h = heading_to_cmp($heading);
 			}
-			if ($input_columns[$h] && $input_columns[$h][$i])
+			if (array_key_exists($h,$input_columns) && array_key_exists($i,$input_columns[$h]))
 			{
 				return $input_columns[$h][$i];
 			}
@@ -806,6 +824,13 @@ function get_uploaded_file($institution)
 {
 	global $config;
 
+	if ( filesize($_FILES["file"]["tmp_name"]) > ($config['system']['max_filesize'] * 1024 * 1024) )
+	{
+		exit_with_status(400,"Submitted File larger than ' . $config['system']['max_filesize'] . 'MB');
+	}
+	
+
+
 	$upload_dir = $config['institutions'][$institution]['upload_dir'];
 	$temp_file = tempnam($upload_dir,'NEW');
 
@@ -966,7 +991,7 @@ function valid_user($institution)
 */
 function heading_to_cmp($str)
 {
-	$str = preg_replace('/\s+/', '', $str);
+	$str = preg_replace('/[\s_]+/', '', $str);
 	$str = strtolower($str);
 	return $str;
 }
@@ -1016,7 +1041,7 @@ function write_csv($rows, $filepath)
 	if (($handle = fopen($filepath, "w")) !== FALSE) {
 		write_csv_rows($rows, $handle);
 		fclose($handle);
-		log_event('EVENT',"$filename written");
+		log_event('EVENT',"$filepath written");
 	}
 	else
 	{
@@ -1077,6 +1102,23 @@ function associate_data($keys, $values)
 	}
 
 	return $arr;
+}
+
+/**
+*
+* Given an associative array, an index and a value, returns true if the index exists and the value matches
+*
+*/
+function array_value_equals($arr,$k,$v)
+{
+	if (!array_key_exists($k,$arr))
+	{
+		return false;
+	}
+	if ($arr[$k] == $v)
+	{
+		return true;
+	}
 }
 
 

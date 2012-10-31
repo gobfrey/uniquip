@@ -99,7 +99,7 @@
 			"validate_heading": "yes",
 			"type": "url"
 		},
-		"Research Group": {
+		"Organisational Unit": {
 			"validate_heading": "yes",
 			"type": "text"
 		},
@@ -150,7 +150,7 @@
 		"Photo": {
 			"type": "input_field"
 		},
-		"Research Group": {
+		"Organisational Unit": {
 			"type": "input_field"
 		},
 		"Cost": {
