@@ -652,10 +652,15 @@ function send_front_page()
 	$page = '
 <html>
 <head>
-<title>Please upload a file</title>
+<title>Equipment Sharing</title>
+<link type="text/css" rel="stylesheet" href="/style.css">
 </head>
 <body>
+
+<div class="heading">
 <h2>Upload a File</h2>
+</div>
+<div class="content">
 <form method="post" action="index.php" enctype="multipart/form-data">
 <label for="file">File:</label>
 <input type="file" name="file" id="file" />
@@ -670,9 +675,12 @@ function send_front_page()
 <br/>
 <input type="submit" name="submit" value="Submit" />
 </form>
+</div>
+<div class="heading">
 <h2>Download a File</h2>
+</div>
+<div class="content">
 <ul>
-<li><a href="/index.php?file=template.csv">Blank Template</a></li>
 ';
 
 if (file_exists(aggregate_file()))
@@ -680,8 +688,10 @@ if (file_exists(aggregate_file()))
 	$page .= '<li><a href="/index.php?file=combined.csv">Combined Data</a></li>';
 }
 
-$page .= '<li><a href="/index.php?file=status.csv">Status Overview</a></li>
-<li>Institution Source Files<ul>
+$page .= '
+<li style="margin-top: 10px"><a href="/index.php?file=template.csv">Blank Template</a></li>
+<li><a href="/index.php?file=status.csv">Status Overview</a></li>
+<li style="margin-top: 10px">Institution Source Files<ul>
 ';
 
 	foreach ($config['institutions'] as $id => $info)
@@ -698,6 +708,7 @@ $page .= '<li><a href="/index.php?file=status.csv">Status Overview</a></li>
 
 $page .= '
 </ul></li></ul>
+</div>
 </body>
 </html>
 ';
@@ -826,7 +837,7 @@ function get_uploaded_file($institution)
 
 	if ( filesize($_FILES["file"]["tmp_name"]) > ($config['system']['max_filesize'] * 1024 * 1024) )
 	{
-		exit_with_status(400,"Submitted File larger than ' . $config['system']['max_filesize'] . 'MB');
+		exit_with_status(400,"Submitted File larger than " . $config['system']['max_filesize'] . 'MB');
 	}
 	
 

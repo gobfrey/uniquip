@@ -50,6 +50,10 @@
 		"admin": {
 			"can_write": ["all"],
 			"can_read": ["all"]
+		},
+		"cjg": {
+			"can_write": ["all"],
+			"can_read": ["all"]
 		}
 	},
 	"csv_input_columns": 
