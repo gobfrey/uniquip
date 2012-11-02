@@ -10,7 +10,7 @@ div.content
 	border-left: thin green solid;
 	border-right: thin green solid;
 	border-bottom: thin green solid;
-	background-color: #CFC;
+	background-color: #DFD;
 }
 div.heading
 {
@@ -19,14 +19,18 @@ div.heading
 	margin-left: 5px;
 	margin-top: 20px;
 	border: thin green solid;
-	background-color: #CFC;
+	background-color: #AFA;
 }
-h2
+h2, h1
 {
 	font-size: 100%;
 	margin-left: 10px;
 	margin-top: 0;
 	margin-bottom: 0;
+}
+h1
+{
+	font-size: 130%;
 }
 ul
 {

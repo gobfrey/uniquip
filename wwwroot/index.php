@@ -656,6 +656,7 @@ function send_front_page()
 <link type="text/css" rel="stylesheet" href="/style.css">
 </head>
 <body>
+<h1>S5 Facilities Data Sharing Pilot</h1>
 
 <div class="heading">
 <h2>Upload a File</h2>
