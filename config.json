@@ -60,72 +60,68 @@
 	{
 		"Description": {
 			"validate_data": "yes",
-			"validate_heading": "yes",
 			"required": "yes",
 			"type": "text"
 		},
 		"Location": {
 			"validate_data": "yes",
-			"validate_heading": "yes",
 			"required": "yes",
 			"type": "wikipedia_url"
 		},
 		"Contact Telephone": {
 			"validate_data": "yes",
-			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
 			"type": "telephone_number"
 		},
 		"Contact URL": {
 			"validate_data": "yes",
-			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
 			"type": "url"
 		},
 		"Contact Email": {
 			"validate_data": "yes",
-			"validate_heading": "yes",
 			"required": "one_of",
 			"requirement_group": "contact",
 			"type": "email"
 		},
 		"Name": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "text"
 		},
 		"ID": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "text"
 		},
 		"Photo": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "url"
 		},
 		"Organisational Unit": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "text"
 		},
 		"Cost": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "text"
 		},
 		"Availability": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "text"
 		},
 		"Support Available": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "text"
 		},
 		"URL": {
-			"validate_heading": "yes",
+			"validate_data": "yes",
 			"type": "url"
 		},
-		"Open Data": {
-			"validate_heading": "yes",
-			"type": "yes/no"
+		"Open License": {
+			"validate_data": "yes",
+			"type": "set",
+			"options": [ "ogl", "cc0" ]
 		}
 	},
 	"csv_output_columns": {
@@ -169,7 +165,7 @@
 		"URL": {
 			"type": "input_field"
 		},
-		"Open Data": {
+		"Open License": {
 			"type": "input_field"
 		},
 		"Institution": {
@@ -187,7 +183,7 @@
 		"Datestamp": {
 			"type": "upload_datestamp"
 		},
-		"Approximate Coordinates": {
+		"Reference Point": {
 			"type": "input_field_transform",
 			"input_field": "Location",
 			"transform_type": "wikipedia_to_long_lat"

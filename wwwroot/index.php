@@ -22,7 +22,7 @@
 
 
 #load the configuration.  Verify that this path is correct.
-$config = loadconfig('/var/www/facilitiesdatadev/htdocs/uniquip/config.json');
+$config = load_config('/var/www/facilitiesdatadev/htdocs/uniquip/config.json');
 
 date_default_timezone_set('Europe/London');
 
@@ -245,9 +245,9 @@ function file_is_valid($file_path)
 * Is the given value of type $type?
 *
 */
-function valid_value($val, $type)
+function valid_value($val, $col_conf )
 {
-	switch ($type){
+	switch ($col_conf["type"]){
 		case 'text': return true;
 		case 'url':
 			if (filter_var($val, FILTER_VALIDATE_URL) === false) {
@@ -264,6 +264,13 @@ function valid_value($val, $type)
 				(strcasecmp($val, 'yes') == 0) || 
 				(strcasecmp($val, 'no') == 0)
 			)
+			{
+				return false;
+			}
+			return true;
+		case 'set':
+			$tmp_val = strtolower($val);
+			if (!in_array($tmp_val, $col_conf['options']))
 			{
 				return false;
 			}
@@ -320,11 +327,17 @@ function problems_in_data_row($row, $rowindex)
 
 		if (
 			($val !== null) &&
-			array_key_exists('validate_data', $col_conf) && 
-			(!valid_value($val, $col_conf['type']))
+			array_key_exists('validate_data', $col_conf) &&
+			$col_conf['validate_data'] == 'yes' && 
+			(!valid_value($val, $col_conf))
 		)
 		{
-			array_push($problems, "Row $rowindex: " . cmp_to_heading($heading_cmp) . " is not of type " . $col_conf["type"]);
+			$t = $col_conf['type'];
+			if ($t == 'set')
+			{
+				$t .= '[' . implode(',',$col_conf['options']) . ']';
+			}
+			array_push($problems, "Row $rowindex: " . cmp_to_heading($heading_cmp) . " is not of type $t");
 		}
 	}
 
@@ -581,7 +594,11 @@ function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
 			if ($cconf['transform_type'] == 'wikipedia_to_long_lat')
 			{
 				$val = $input_columns[heading_to_cmp($cconf['input_field'])][$i];
-				if (valid_value($val,'wikipedia_url'))
+
+				$tmp_cconf = array();
+				$tmp_col_conf["type"] = 'wikipedia_url';
+		
+				if (valid_value($val,$tmp_col_conf))
 				{
 					$cache = read_cache_file('wikipedia_to_lat_long');
 					if (array_key_exists($val,$cache))
@@ -1283,7 +1300,7 @@ function read_cache_file($id)
 * Also creates a comparevalue index for columns in submitted CSV files
 *
 */
-function loadconfig($filename)
+function load_config($filename)
 {
 
 	$data = file_get_contents($filename);
