@@ -731,6 +731,8 @@ $page .= '
 </html>
 ';
 	echo $page;
+
+	log_event('EVENT', 'Front Page Sent');
 	exit;
 }
 
@@ -1223,6 +1225,8 @@ function send_file($file, $filename, $mimetype = "text/csv")
 	header("Content-Length: ". filesize($file));
 	readfile($file);
 
+	log_event('EVENT', "$filename sent");
+	exit;
 }
 
 /**
@@ -1235,6 +1239,8 @@ function exit_with_status($code, $message)
 	header('Content-Type: text/plain; charset=utf-8');
 	header(status_code_string($code),1,$code);
 	echo $message;
+
+	log_event('EXIT',"Exiting with $code: $message");
 	exit;
 }
 
@@ -1391,8 +1397,6 @@ function log_event($event_type, $msg)
 	$log_parts[] = $_SERVER['REMOTE_HOST'];
 	$log_parts[] = $msg;
 
-##need username too
-
 	$log_line = implode("\t",$log_parts) . "\n";
 
 	if (!fwrite($fp, $log_line))
@@ -1419,7 +1423,8 @@ function swap_in_new_file($institution, $temp_file)
 	if (file_exists($target_file))
 	{
 		$archive_filename = $upload_dir . 'archived-on-' . date("Y-m-d-H-i-s");
-		if (!rename($target_file, $archive_filename)) {
+		if (!rename($target_file, $archive_filename))
+		{
 			exit_with_status(500,"couldn't rename $target_file to $archive_filename");
 		}
 	}
@@ -1428,6 +1433,7 @@ function swap_in_new_file($institution, $temp_file)
 		unlink($temp_file);
 		exit_with_status(500,"couldn't rename $temp_file to $target_file");
 	}
+	log_event('EVENT', "$institution file swapped in");
 }
 
 ?>
