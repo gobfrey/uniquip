@@ -182,8 +182,10 @@ function file_is_valid($file_path)
 	$problems = array();
 	$headings_cmp = array();
 
-	if (($handle = fopen($file_path, "r")) !== FALSE) {
-		while (($row = fgetcsv($handle)) !== FALSE) {
+	if (($handle = fopen($file_path, "r")) !== FALSE)
+	{
+		while (($row = fgetcsv($handle)) !== FALSE)
+		{
 			$row_problems = array();
 			if ($row_number == 1)
 			{
@@ -247,15 +249,18 @@ function file_is_valid($file_path)
 */
 function valid_value($val, $col_conf )
 {
-	switch ($col_conf["type"]){
+	switch ($col_conf["type"])
+	{
 		case 'text': return true;
 		case 'url':
-			if (filter_var($val, FILTER_VALIDATE_URL) === false) {
+			if (filter_var($val, FILTER_VALIDATE_URL) === false)
+			{
 				return false;
 			}
 			return true;
 		case 'email':
-			if (filter_var($val, FILTER_VALIDATE_EMAIL) === false) {
+			if (filter_var($val, FILTER_VALIDATE_EMAIL) === false)
+			{
 				return false;
 			}
 			return true;
@@ -276,18 +281,21 @@ function valid_value($val, $col_conf )
 			}
 			return true;
 		case 'wikipedia_url':
-			if (filter_var($val, FILTER_VALIDATE_URL) === false) {
+			if (filter_var($val, FILTER_VALIDATE_URL) === false)
+			{
 				return false;
 			}
 			#just a quick and dirty check
-			if (!strstr($val, 'wikipedia')) {
+			if (!strstr($val, 'en.wikipedia'))
+			{
 				return false;
 			}
 			return true;
 		case 'telephone_number':
 			#a pretty permissive regexp, expecting a sequence of at least 8 telephone-number-esque characters 
 			$opts = array( "options" => array( "regexp" => '/[0-9\s()-]{8,}$/' ));
-			if (filter_var($val, FILTER_VALIDATE_REGEXP, $opts ) === false) {
+			if (filter_var($val, FILTER_VALIDATE_REGEXP, $opts ) === false)
+			{
 				return false;
 			}
 			return true;
@@ -512,7 +520,8 @@ function generate_institution_rows($inst, $input_columns, &$rows)
 	#count depth of columns (also sanity check that they're the same depth)
 	foreach ($input_columns as $heading_cmp => $vals)
 	{
-		if ($row_count == 0) {
+		if ($row_count == 0)
+		{
 			$row_count = count($vals);
 		}
 		else
@@ -563,7 +572,8 @@ function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
 		$config["output_cache"][$inst] = array();
 	}
 
-	switch ($cconf['type']){
+	switch ($cconf['type'])
+	{
 		case 'config':
 			return configpath_to_value($cconf['configpath'], $inst);
 		case 'upload_datestamp':
@@ -810,8 +820,10 @@ function csv_to_associative_array($filepath)
 	$first = true;
 	$headings_cmp = array();
 	$columns = array();
-	if (($handle = fopen($filepath, "r")) !== FALSE) {
-		while (($row = fgetcsv($handle)) !== FALSE) {
+	if (($handle = fopen($filepath, "r")) !== FALSE)
+	{
+		while (($row = fgetcsv($handle)) !== FALSE)
+		{
 			if ($first)
 			{
 				foreach ($row as $heading)
@@ -825,7 +837,8 @@ function csv_to_associative_array($filepath)
 			else
 			{
 				#iterate over the headings so as to insert null values if the data row is short
-				for ($i = 0; $i < count($headings_cmp); ++$i) {
+				for ($i = 0; $i < count($headings_cmp); ++$i)
+				{
 					if ($row[$i] != null)
 					{
 						$columns[$headings_cmp[$i]][] = $row[$i];
@@ -1069,7 +1082,8 @@ function send_csv($rows, $filename)
 */
 function write_csv($rows, $filepath)
 {
-	if (($handle = fopen($filepath, "w")) !== FALSE) {
+	if (($handle = fopen($filepath, "w")) !== FALSE)
+	{
 		write_csv_rows($rows, $handle);
 		fclose($handle);
 		log_event('EVENT',"$filepath written");
@@ -1101,7 +1115,8 @@ function write_csv_rows($rows, $fh)
 */
 function status_code_string($code)
 {
-	switch ($code){
+	switch ($code)
+	{
 		case 202: return 'HTTP/1.0 202 Accepted';
 		case 400: return 'HTTP/1.0 400 Bad Request';
 		case 401: return 'HTTP/1.0 401 Unauthorized';
@@ -1121,7 +1136,8 @@ function associate_data($keys, $values)
 {
 	$arr = array();
 
-	for ($i = 0; $i < count($keys); ++$i) {
+	for ($i = 0; $i < count($keys); ++$i)
+	{
 		if ($values[$i])
 		{
 			$arr[$keys[$i]] = $values[$i];
@@ -1429,7 +1445,8 @@ function swap_in_new_file($institution, $temp_file)
 		}
 	}
 
-	if (!rename($temp_file, $target_file)) {
+	if (!rename($temp_file, $target_file))
+	{
 		unlink($temp_file);
 		exit_with_status(500,"couldn't rename $temp_file to $target_file");
 	}
