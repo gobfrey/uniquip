@@ -1410,7 +1410,7 @@ function log_event($event_type, $msg)
 	$log_parts[] = $event_type;
 	$log_parts[] = $_SERVER['REMOTE_USER'];
 	$log_parts[] = date("Y-m-d H:i:s");
-	$log_parts[] = $_SERVER['REMOTE_HOST'];
+	$log_parts[] = $_SERVER['REMOTE_ADDR'];
 	$log_parts[] = $msg;
 
 	$log_line = implode("\t",$log_parts) . "\n";
