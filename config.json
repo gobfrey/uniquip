@@ -58,15 +58,38 @@
 	},
 	"csv_input_columns": 
 	{
+		"Type":	{
+			"validate_data": "yes",
+			"type": "set",
+			"options": [
+				"facility",
+				"equipment"
+			]
+		},
+		"Name": {
+			"validate_data": "yes",
+			"required": "one_of",
+			"requirement_group": "descriptor",
+			"type": "text"
+		},
 		"Description": {
 			"validate_data": "yes",
-			"required": "yes",
+			"required": "one_of",
+			"requirement_group": "descriptor",
+			"type": "text"
+		},
+		"Related Facility ID": {
+			"type": "text"
+		},
+		"Technique": {
 			"type": "text"
 		},
 		"Location": {
 			"validate_data": "yes",
-			"required": "yes",
 			"type": "wikipedia_url"
+		},
+		"Contact Name": {
+			"type": "text"
 		},
 		"Contact Telephone": {
 			"validate_data": "yes",
@@ -86,9 +109,20 @@
 			"requirement_group": "contact",
 			"type": "email"
 		},
-		"Name": {
-			"validate_data": "yes",
+		"Secondary Contact Name": {
 			"type": "text"
+		},
+		"Secondary Contact Telephone": {
+			"validate_data": "yes",
+			"type": "telephone_number"
+		},
+		"Secondary Contact URL": {
+			"validate_data": "yes",
+			"type": "url"
+		},
+		"Secondary Contact Email": {
+			"validate_data": "yes",
+			"type": "email"
 		},
 		"ID": {
 			"validate_data": "yes",
@@ -102,19 +136,19 @@
 			"validate_data": "yes",
 			"type": "text"
 		},
-		"Cost": {
+		"Site Location": {
 			"validate_data": "yes",
 			"type": "text"
 		},
-		"Availability": {
+		"Building": {
 			"validate_data": "yes",
 			"type": "text"
 		},
-		"Support Available": {
+		"Service Level": {
 			"validate_data": "yes",
 			"type": "text"
 		},
-		"URL": {
+		"Web Address": {
 			"validate_data": "yes",
 			"type": "url"
 		},
@@ -125,12 +159,27 @@
 		}
 	},
 	"csv_output_columns": {
+		"Type":	{
+			"type": "input_field"
+		},
+		"Name": {
+			"type": "input_field"
+		},
 		"Description": {
+			"type": "input_field"
+		},
+		"Related Facility ID": {
+			"type": "input_field"
+		},
+		"Technique": {
 			"type": "input_field"
 		},
 		"Location (Wikipdia)": {
 			"type": "input_field",
 			"input_field": "Location"
+		},
+		"Contact Name": {
+			"type": "input_field"
 		},
 		"Contact Telephone": {
 			"type": "input_field"
@@ -141,7 +190,16 @@
 		"Contact Email": {
 			"type": "input_field"
 		},
-		"Name": {
+		"Secondary Contact Name": {
+			"type": "input_field"
+		},
+		"Secondary Contact Telephone": {
+			"type": "input_field"
+		},
+		"Secondary Contact URL": {
+			"type": "input_field"
+		},
+		"Secondary Contact Email": {
 			"type": "input_field"
 		},
 		"ID": {
@@ -153,16 +211,16 @@
 		"Organisational Unit": {
 			"type": "input_field"
 		},
-		"Cost": {
+		"Site Location": {
 			"type": "input_field"
 		},
-		"Availability": {
+		"Building": {
 			"type": "input_field"
 		},
-		"Support Available": {
+		"Service Level": {
 			"type": "input_field"
 		},
-		"URL": {
+		"Web Address": {
 			"type": "input_field"
 		},
 		"Open License": {
