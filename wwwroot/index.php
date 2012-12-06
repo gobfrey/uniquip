@@ -131,6 +131,10 @@ function process_get()
 		{
 			send_status();
 		}
+		elseif ($filename == 'schema.csv')
+		{
+			send_schema();
+		}
 		else
 		{
 			#must be an 'institution.csv' file -- extract the id of the institution
@@ -718,6 +722,7 @@ if (file_exists(aggregate_file()))
 
 $page .= '
 <li style="margin-top: 10px"><a href="/index.php?file=template.csv">Blank Template</a></li>
+<li><a href="/index.php?file=schema.csv">CSV Schema</a></li>
 <li><a href="/index.php?file=status.csv">Status Overview</a></li>
 <li style="margin-top: 10px">Institution Source Files<ul>
 ';
@@ -766,6 +771,73 @@ function send_template()
 	send_csv($rows, 'template.csv');
 }
 
+/**
+*
+* Generate the schema from the configuration and send it
+*
+*/
+function send_schema()
+{
+	global $config;
+
+	$rows = array();
+
+	$rows[] = array('Column Title', 'Column Type', 'Required');
+
+	foreach ($config["csv_input_columns"] as $label => $info )
+	{
+		$row = array();
+		$row[] = $label;
+
+		$parts = array('type', 'required');		
+		foreach ($parts as $part)
+		{
+			$val;
+			if ($part == 'type')
+			{
+				$val = $info[$part];
+				if ($val == 'set')
+				{
+					$val .= ' [';
+					$val .= implode(',',$info['options']);
+					$val .= ']';
+				}
+			}
+			elseif ($part == 'required')
+			{
+				if (array_key_exists($part, $info))
+				{ 
+					$val = $info[$part];
+					if ($val == 'one_of')
+					{
+						$val .= ' (' . $info['requirement_group'] . ')';
+					}
+				}
+				else
+				{
+					$val = 'no';
+				}
+				
+			}
+			else
+			{
+				if (array_key_exists($part, $info))
+				{ 
+					$val = $info[$part];
+				}
+				else
+				{
+					$val = '';
+				}
+			}
+
+			$row[] = $val;
+		}
+		$rows[] = $row;
+	}
+
+	send_csv($rows, 'schema.csv');
+}
 
 
 ##########################################################
