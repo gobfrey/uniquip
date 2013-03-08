@@ -61,6 +61,7 @@
 		"Type":	{
 			"validate_data": "yes",
 			"type": "set",
+			"required": "yes",
 			"options": [
 				"facility",
 				"equipment"
@@ -89,7 +90,8 @@
 			"type": "wikipedia_url"
 		},
 		"Contact Name": {
-			"type": "text"
+			"type": "text",
+			"required": "yes"
 		},
 		"Contact Telephone": {
 			"validate_data": "yes",
@@ -138,7 +140,8 @@
 		},
 		"Site Location": {
 			"validate_data": "yes",
-			"type": "text"
+			"type": "text",
+			"required": "yes"
 		},
 		"Building": {
 			"validate_data": "yes",
