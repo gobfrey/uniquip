@@ -37,6 +37,8 @@ switch ($_SERVER['REQUEST_METHOD'])
 	case 'GET':
 		process_get();
 		break;
+	default:
+		exit_with_status(405, "Method not allowed.");
 }
 
 exit;
@@ -1212,6 +1214,7 @@ function status_code_string($code)
 		case 401: return 'HTTP/1.0 401 Unauthorized';
 		case 403: return 'HTTP/1.0 403 Forbidden';
 		case 404: return 'HTTP/1.0 404 Not Found';
+		case 405: return 'HTTP/1.0 405 Method Not Allowed';
 		case 500: return 'HTTP/1.0 500 Internal Server Error';
 	}
 }
