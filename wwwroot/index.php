@@ -28,12 +28,17 @@ date_default_timezone_set('Europe/London');
 
 switch ($_SERVER['REQUEST_METHOD'])
 {
+	case 'PUT':
+		process_put();
+		break;
 	case 'POST':
 		process_post();
 		break;
 	case 'GET':
 		process_get();
 		break;
+	default:
+		exit_with_status(405, "Method not allowed.");
 }
 
 exit;
@@ -44,6 +49,20 @@ exit;
 #
 ####################################################
 
+/**
+* Handles the putting of an institution's file
+*
+* The institution parameter must be set, and the user must have
+* permission to post the file.
+*
+*/
+function process_put()
+{
+	$data = fopen('php://input', 'r');
+	process_upload($_GET['institution'],
+                       $data,
+                       getallheaders()['Content-Length']);
+}
 
 /**
 * Handles the posting of an institution's file
@@ -54,10 +73,17 @@ exit;
 */
 function process_post()
 {
-	global $config;
+	if (!$_FILES['file'])
+	{
+		exit_with_status(400,"No file posted!");
+	}
+	
+	$data = fopen($_FILES['file']['tmp_name'], 'r');
 
-	$institution = $_POST['institution'];
+	process_upload($_POST['institution'], $data, $_FILES['file']['size']);
+}
 
+function process_upload($institution, $data, $length) {
 	if (!$institution)
 	{
 		exit_with_status(400,"You must specify an institution");
@@ -73,13 +99,8 @@ function process_post()
 		exit_with_status(404, "You may not post for this institution");
 	}
 
-	if (!$_FILES['file'])
-	{
-		exit_with_status(400,"No file posted!");
-	}
-
 	#upload file
-	get_uploaded_file($institution);
+	get_uploaded_file($institution, $data, $length);
 
 	#if we got here, then the upload was successful.  Any problems, and exit_with_status would have been called.
 
@@ -88,7 +109,6 @@ function process_post()
 
 	exit_with_status(200,"File Upload Successful.");
 }
-
 
 /**
 *
@@ -936,11 +956,11 @@ function csv_to_associative_array($filepath)
 * Process and store a file that has been uploaded
 *
 */
-function get_uploaded_file($institution)
+function get_uploaded_file($institution, $data, $length)
 {
 	global $config;
 
-	if ( filesize($_FILES["file"]["tmp_name"]) > ($config['system']['max_filesize'] * 1024 * 1024) )
+	if ( $length > ($config['system']['max_filesize'] * 1024 * 1024) )
 	{
 		exit_with_status(400,"Submitted File larger than " . $config['system']['max_filesize'] . 'MB');
 	}
@@ -950,9 +970,9 @@ function get_uploaded_file($institution)
 	$upload_dir = $config['institutions'][$institution]['upload_dir'];
 	$temp_file = tempnam($upload_dir,'NEW');
 
-	if (!move_uploaded_file($_FILES["file"]["tmp_name"], $temp_file))
+	if (file_put_contents($temp_file, $data) === FALSE)
 	{
-		exit_with_status(500,"Couldn't move uploaded file to $temp_file");
+		exit_with_status(500,"Couldn't save uploaded file to $temp_file");
 	}
 
 	if (file_is_valid($temp_file))
@@ -1194,6 +1214,7 @@ function status_code_string($code)
 		case 401: return 'HTTP/1.0 401 Unauthorized';
 		case 403: return 'HTTP/1.0 403 Forbidden';
 		case 404: return 'HTTP/1.0 404 Not Found';
+		case 405: return 'HTTP/1.0 405 Method Not Allowed';
 		case 500: return 'HTTP/1.0 500 Internal Server Error';
 	}
 }
