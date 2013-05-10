@@ -59,9 +59,11 @@ exit;
 function process_put()
 {
 	$data = fopen('php://input', 'r');
+
+	$headers = getallheaders();
 	process_upload($_GET['institution'],
                        $data,
-                       getallheaders()['Content-Length']);
+                       $headers['Content-Length']);
 }
 
 /**
