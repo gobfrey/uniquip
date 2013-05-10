@@ -646,7 +646,6 @@ function generate_output_value($inst, $heading, $cconf, $input_columns, $i)
 						$coords = wikipedia_to_lat_long($val);
 						if ($coords === null)
 						{
-echo 'foo';
 							return null;
 						}
 						$cache[$val] = $coords;
