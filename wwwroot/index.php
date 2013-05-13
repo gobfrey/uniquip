@@ -22,7 +22,7 @@
 
 
 #load the configuration.  Verify that this path is correct.
-$config = load_config('/var/www/facilitiesdatadev/htdocs/uniquip/config.json');
+$config = load_config('/var/www/uniquip/config.json');
 
 date_default_timezone_set('Europe/London');
 

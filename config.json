@@ -251,7 +251,7 @@
 		}
 	},
 	"system": {
-		"base_path": "/var/www/facilitiesdatadev/htdocs/uniquip/",
+		"base_path": "/var/www/uniquip/",
 		"upload_base": "var/uploads/",
 		"log_base": "var/log/",
 		"logfile_name": "event_log",
