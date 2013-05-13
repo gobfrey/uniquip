@@ -714,6 +714,7 @@ function send_front_page()
 <h2>Upload a File</h2>
 </div>
 <div class="content">
+<p>The file should be a UTF-8 encoded CSV file.  A blank template and a schema are available for download below.</p>
 <form method="post" action="index.php" enctype="multipart/form-data">
 <label for="file">File:</label>
 <input type="file" name="file" id="file" />
