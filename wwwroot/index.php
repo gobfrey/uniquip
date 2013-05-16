@@ -161,12 +161,20 @@ function process_get()
 		{
 			#must be an 'institution.csv' file -- extract the id of the institution
 			$parts = explode('.',$filename);
-			if (valid_institution($parts[0]) and $parts[1] == 'csv')
+			$institution = $parts[0];
+			if (valid_institution($institution) and $parts[1] == 'csv')
 			{
-				$file = institution_active_file($parts[0]);
+				$file = institution_active_file($institution);
 				if (file_exists($file))
 				{
-					send_file($file,$filename);
+					if (allow($institution, 'read'))
+					{
+						send_file($file,$filename);
+					}
+					else
+					{
+						exit_with_status(403,"You do not have permission");
+					}
 				}
 				else
 				{
