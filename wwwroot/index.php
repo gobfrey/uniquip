@@ -9,6 +9,9 @@
 #	Author: Adam Field
 #	Version Dates:
 #		v0.1 - 2012-10-26
+#		v0.2 - 2013-08-20
+#			-- Reports which columns duplicates appear in
+#			-- Removed base path constant.  Now derived from call to getcwd().
 #
 #	Purpose
 #		To allow the upload of data on sharable facilities by S5 institutions.
@@ -21,8 +24,8 @@
 ##################################################################
 
 
-#load the configuration.  Verify that this path is correct.
-$config = load_config('/data/httpd/ses5facilitiesdata/htdocs/uniquip/config.json');
+#load the configuration. 
+$config = load_config();
 
 date_default_timezone_set('Europe/London');
 
@@ -231,10 +234,45 @@ function file_is_valid($file_path)
 				$problems = problems_in_headings($row, $headings_cmp);
 
 				#Check for duplicate headings
-				$uniq_headings_cmp = array_unique($headings_cmp);
 				if (count(array_unique($headings_cmp)) != count($headings_cmp))
 				{
-					$problems[] = 'Duplicate heading in CSV';
+					#
+					$occurance_counts = array();
+					foreach ($headings_cmp as $heading_cmp)
+					{
+						if (array_key_exists($heading_cmp, $occurance_counts))
+						{
+							$occurance_counts[$heading_cmp]++;
+						}
+						else
+						{
+							$occurance_counts[$heading_cmp] = 1;
+						}
+					}
+
+					while (list($heading_cmp, $count) = each($occurance_counts))
+					{
+						if (
+							$count == 1
+							|| empty($heading_cmp)
+						)
+						{
+							continue;
+						}
+
+						$duplicate_column_letters = array();
+						for ( $i = 0; $i < count($row); $i++ )
+						{
+							if (heading_to_cmp($row[$i]) == $heading_cmp)
+							{
+								$duplicate_column_letters[] = column_index_to_letter($i);
+							}							
+						}
+						if (!empty($duplicate_column_letters))
+						{
+							$problems[] = 'Duplicate headings in CSV, columns ' . implode(',',$duplicate_column_letters);
+						}
+					}
 				}
 
 				if ($problems)
@@ -878,6 +916,24 @@ function send_schema()
 
 /**
 *
+* Given the index of a column (0..n), will return the column as it would appear
+* in a spreadsheet (A,B,C, etc)
+*
+*/
+function column_index_to_letter($index)
+{
+	$c = 'A';
+
+	/* multiple increments instead of one addition to keep it as a character (note that Z increments to AA) */
+	for ($i = 0; $i < $index; $i++)
+	{
+		$c++;
+	}
+	return $c;
+}
+
+/**
+*
 * Given an institution, reiturns true if it has an active uploaded file
 * false otherwise
 *
@@ -1425,8 +1481,10 @@ function read_cache_file($id)
 * Also creates a comparevalue index for columns in submitted CSV files
 *
 */
-function load_config($filename)
+function load_config()
 {
+	$base_path = getcwd() . '/../';
+	$filename = $base_path . 'config.json';
 
 	$data = file_get_contents($filename);
 
@@ -1444,6 +1502,7 @@ function load_config($filename)
 		die("$msg\n");
 	}
 
+	$decoded["system"]["base_path"] = $base_path;
 	$upload_base = $decoded["system"]["base_path"];
 	$upload_base .= $decoded["system"]["upload_base"];
 
