@@ -251,7 +251,7 @@
 		}
 	},
 	"system": {
-		"base_path": "/var/www/uniquip/",
+		"base_path": "/data/httpd/ses5facilitiesdata/htdocs/uniquip/",
 		"upload_base": "var/uploads/",
 		"log_base": "var/log/",
 		"logfile_name": "event_log",
